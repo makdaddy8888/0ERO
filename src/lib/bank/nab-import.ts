@@ -1,82 +1,166 @@
-export interface ParsedTransaction {
-  postedAt: string;
-  description: string;
-  amountCents: number;
-  balanceCents?: number;
-  externalId?: string;
-}
+import type { ParsedTransaction, ParseResult } from "./types";
+import {
+  findColumnIndex,
+  normalizeDate,
+  normalizeHeader,
+  parseAudToCents,
+  splitCsvLine,
+} from "./csv-utils";
 
-/** Generic NAB-style CSV: Date, Amount, Account Balance, Description */
-export function parseNabCsv(text: string): ParsedTransaction[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
+export type { ParsedTransaction, ParseResult };
 
-  const header = lines[0].toLowerCase();
-  const hasBalance = header.includes("balance");
+/**
+ * Parse NAB internet banking CSV exports.
+ * Supports common column layouts:
+ * - Date, Amount, Account Balance, Narrative
+ * - Date, Amount, Balance, Description
+ * - Date, Narrative, Debit Amount, Credit Amount, Balance
+ */
+export function parseNabCsv(text: string): ParseResult {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) {
+    return { transactions: [], format: "empty", headers: [] };
+  }
+
+  const headers = splitCsvLine(lines[0]);
+  const map = detectNabColumns(headers);
+
+  if (map.date < 0 || map.description < 0) {
+    return { transactions: [], format: "unknown", headers };
+  }
 
   const rows: ParsedTransaction[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const cols = splitCsvLine(line);
-    if (cols.length < 3) continue;
+    const cols = splitCsvLine(lines[i]);
+    if (cols.length < 2) continue;
 
-    const postedAt = normalizeDate(cols[0]);
-    const amountCents = parseAudToCents(cols[1]);
-    let description: string;
-    let balanceCents: number | undefined;
+    const postedAt = normalizeDate(cols[map.date] ?? "");
+    if (!postedAt) continue;
 
-    if (hasBalance && cols.length >= 4) {
-      balanceCents = parseAudToCents(cols[2]);
-      description = cols.slice(3).join(", ");
-    } else {
-      description = cols.slice(2).join(", ");
-    }
+    const description = (cols[map.description] ?? "").replace(/^"|"$/g, "").trim();
+    const amountCents = resolveAmountCents(cols, map);
+    const balanceCents =
+      map.balance >= 0 ? parseAudToCents(cols[map.balance] ?? "") : undefined;
+
+    const externalId = `nab-${hashRow(postedAt, amountCents, description)}`;
 
     rows.push({
       postedAt,
-      description: description.trim(),
+      description,
       amountCents,
       balanceCents,
-      externalId: `nab-${i}-${postedAt}`,
+      externalId,
     });
   }
-  return rows;
+
+  return {
+    transactions: rows,
+    format: map.format,
+    headers: headers.map((h) => h.replace(/^"|"$/g, "")),
+  };
 }
 
-function splitCsvLine(line: string): string[] {
-  const out: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (const ch of line) {
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-    if (ch === "," && !inQuotes) {
-      out.push(cur);
-      cur = "";
-      continue;
-    }
-    cur += ch;
+interface NabColumnMap {
+  date: number;
+  description: number;
+  amount: number;
+  debit: number;
+  credit: number;
+  balance: number;
+  format: string;
+}
+
+function detectNabColumns(headers: string[]): NabColumnMap {
+  const date = findColumnIndex(headers, "date", "transaction date", "posted date");
+  const narrative = findColumnIndex(
+    headers,
+    "narrative",
+    "description",
+    "details",
+    "transaction description",
+    "memo",
+  );
+  const amount = findColumnIndex(headers, "amount", "transaction amount");
+  const debit = findExactColumnIndex(
+    headers,
+    "debit amount",
+    "debit",
+    "withdrawal",
+    "withdrawals",
+  );
+  const credit = findExactColumnIndex(
+    headers,
+    "credit amount",
+    "credit",
+    "deposit",
+    "deposits",
+  );
+  const balance = findColumnIndex(
+    headers,
+    "account balance",
+    "balance",
+    "running balance",
+  );
+
+  if (debit >= 0 && credit >= 0 && debit !== credit) {
+    return {
+      date,
+      description: narrative >= 0 ? narrative : findColumnIndex(headers, "narrative"),
+      amount: -1,
+      debit,
+      credit,
+      balance,
+      format: "nab-debit-credit",
+    };
   }
-  out.push(cur);
-  return out;
+
+  return {
+    date,
+    description: narrative,
+    amount,
+    debit: -1,
+    credit: -1,
+    balance,
+    format: "nab-amount",
+  };
 }
 
-function parseAudToCents(raw: string): number {
-  const cleaned = raw.replace(/[$,\s"]/g, "");
-  const n = Number.parseFloat(cleaned);
-  if (Number.isNaN(n)) return 0;
-  return Math.round(n * 100);
-}
-
-function normalizeDate(raw: string): string {
-  const t = raw.trim();
-  const dmy = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (dmy) {
-    const [, dd, mm, yyyy] = dmy;
-    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+function resolveAmountCents(cols: string[], map: NabColumnMap): number {
+  if (map.debit >= 0 && map.credit >= 0) {
+    const debit = parseAudToCents(cols[map.debit] ?? "");
+    const credit = parseAudToCents(cols[map.credit] ?? "");
+    if (debit !== 0) return -Math.abs(debit);
+    if (credit !== 0) return Math.abs(credit);
+    return 0;
   }
-  return t;
+
+  if (map.amount >= 0) {
+    return parseAudToCents(cols[map.amount] ?? "");
+  }
+
+  return 0;
+}
+
+function findExactColumnIndex(headers: string[], ...names: string[]): number {
+  const normalized = headers.map(normalizeHeader);
+  for (const name of names) {
+    const idx = normalized.indexOf(name);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function hashRow(date: string, amountCents: number, description: string): string {
+  const raw = `${date}|${amountCents}|${description}`;
+  let h = 0;
+  for (let i = 0; i < raw.length; i++) {
+    h = (h << 5) - h + raw.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h).toString(36);
+}
+
+/** @deprecated use parseNabCsv — returns transactions only */
+export function parseNabCsvLegacy(text: string): ParsedTransaction[] {
+  return parseNabCsv(text).transactions;
 }

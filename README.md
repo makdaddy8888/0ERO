@@ -259,6 +259,14 @@ It helps you **prepare** like an agent would ask questions — but **you** lodge
 
 Pull requests: [github.com/makdaddy8888/0ERO](https://github.com/makdaddy8888/0ERO)
 
+## Roadmap & feature requests
+
+**What's next?** See [docs/ROADMAP.md](docs/ROADMAP.md)
+
+**Suggest a feature:** [Open a feature request](https://github.com/makdaddy8888/0ERO/issues/new?template=feature_request.md)
+
+**Dependency updates & security:** [docs/DEPENDENCY-SECURITY.md](docs/DEPENDENCY-SECURITY.md) — Dependabot + weekly CI scans keep libraries current.
+
 ---
 
 ## Disclaimer

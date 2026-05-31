@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roadmap
+    url: https://github.com/makdaddy8888/0ERO/blob/main/docs/ROADMAP.md
+    about: See what's planned and vote on features
+  - name: Security policy
+    url: https://github.com/makdaddy8888/0ERO/blob/main/docs/DEPENDENCY-SECURITY.md
+    about: Dependency updates and vulnerability reporting

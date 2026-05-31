@@ -1,4 +1,4 @@
-import type { ParsedTransaction } from "./nab-import";
+import type { ParsedTransaction } from "./types";
 
 /** Generic Amex CSV: Date, Description, Amount */
 export function parseAmexCsv(text: string): ParsedTransaction[] {

@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "institutionId": "commsec",
+  "institutionLabel": "CommSec",
+  "sourceUrl": "https://www.commsec.com.au/",
+  "lastReviewed": "2026-05-31",
+  "products": [
+    {
+      "id": "commsec-share-trading",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Share Trading Account",
+      "categoryId": "broker",
+      "categoryLabel": "Share trading",
+      "keywords": ["share trading", "asx", "stocks", "broker", "chess"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-cdia",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "Commonwealth Direct Investment Account (CDIA)",
+      "categoryId": "everyday",
+      "categoryLabel": "Cash management",
+      "keywords": ["cdia", "cash", "settlement", "direct investment"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-notice-investor",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Notice Investor",
+      "categoryId": "savings",
+      "categoryLabel": "Cash management",
+      "keywords": ["notice investor", "higher interest", "cash"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-pocket",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Pocket",
+      "categoryId": "broker",
+      "categoryLabel": "ETF investing",
+      "keywords": ["pocket", "etf", "micro investing", "app"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-international",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec International Shares",
+      "categoryId": "broker",
+      "categoryLabel": "International trading",
+      "keywords": ["international", "us shares", "global", "nyse"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-margin-loan",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Margin Loan",
+      "categoryId": "broker",
+      "categoryLabel": "Margin lending",
+      "keywords": ["margin loan", "leverage", "borrowing"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-options",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Exchange Traded Options",
+      "categoryId": "broker",
+      "categoryLabel": "Options trading",
+      "keywords": ["options", "eto", "derivatives"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-mfunds",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec mFunds (managed funds)",
+      "categoryId": "wealth",
+      "categoryLabel": "Managed funds",
+      "keywords": ["mfunds", "managed funds", "mutual funds"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-warrants",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec Warrants",
+      "categoryId": "broker",
+      "categoryLabel": "Warrants",
+      "keywords": ["warrants", "structured"],
+      "importReady": false,
+      "active": true
+    },
+    {
+      "id": "commsec-smsf-trading",
+      "institutionId": "commsec",
+      "institutionLabel": "CommSec",
+      "registryInstitutionId": "commsec",
+      "label": "CommSec SMSF Share Trading",
+      "categoryId": "broker",
+      "categoryLabel": "SMSF trading",
+      "keywords": ["smsf", "super", "self managed"],
+      "importReady": false,
+      "active": true
+    }
+  ]
+}
