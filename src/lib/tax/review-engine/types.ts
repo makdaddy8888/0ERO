@@ -4,8 +4,15 @@ export interface ReviewFlag {
   id: string;
   module: string;
   severity: ReviewSeverity;
-  question: string;
+  /** Short human headline shown in the UI */
+  title: string;
+  /** What this check does and what we found in your data */
+  explanation: string;
+  /** Concrete next step before lodging in myTax */
+  nextStep: string;
+  /** Optional figures or myTax field reference */
   detail?: string;
+  /** myTax schedule letter (e.g. D1, T, H) */
   relatedCategory?: string;
 }
 

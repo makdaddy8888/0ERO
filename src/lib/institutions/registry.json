@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "bank",
+      "label": "Banks — everyday & savings",
+      "institutions": [
+        { "id": "nab", "label": "NAB", "importPreset": "nab-csv", "importReady": true },
+        { "id": "cba", "label": "CommBank", "importPreset": "cba-csv", "importReady": false },
+        { "id": "westpac", "label": "Westpac", "importPreset": "westpac-csv", "importReady": false },
+        { "id": "anz", "label": "ANZ", "importPreset": "anz-csv", "importReady": false },
+        { "id": "ing", "label": "ING", "importPreset": "ing-csv", "importReady": false },
+        { "id": "macquarie-bank", "label": "Macquarie Bank", "importPreset": "macquarie-csv", "importReady": false },
+        { "id": "bendigo", "label": "Bendigo Bank", "importPreset": null, "importReady": false },
+        { "id": "boq", "label": "Bank of Queensland", "importPreset": null, "importReady": false },
+        { "id": "suncorp", "label": "Suncorp Bank", "importPreset": null, "importReady": false },
+        { "id": "hsbc-au", "label": "HSBC Australia", "importPreset": null, "importReady": false },
+        { "id": "bank-melbourne", "label": "Bank of Melbourne", "importPreset": null, "importReady": false },
+        { "id": "banksa", "label": "BankSA", "importPreset": null, "importReady": false },
+        { "id": "st-george", "label": "St.George", "importPreset": null, "importReady": false },
+        { "id": "adelaide-bank", "label": "Adelaide Bank", "importPreset": null, "importReady": false },
+        { "id": "me-bank", "label": "ME Bank", "importPreset": null, "importReady": false },
+        { "id": "up", "label": "Up Bank", "importPreset": null, "importReady": false },
+        { "id": "86400", "label": "86 400", "importPreset": null, "importReady": false },
+        { "id": "ubank", "label": "UBank", "importPreset": null, "importReady": false },
+        { "id": "rabobank-au", "label": "Rabobank Australia", "importPreset": null, "importReady": false },
+        { "id": "citibank-au", "label": "Citibank Australia", "importPreset": null, "importReady": false },
+        { "id": "bankwest", "label": "Bankwest", "importPreset": null, "importReady": false }
+      ]
+    },
+    {
+      "id": "credit_card",
+      "label": "Credit cards",
+      "institutions": [
+        { "id": "amex", "label": "American Express", "importPreset": "amex-csv", "importReady": true },
+        { "id": "nab-cc", "label": "NAB credit card", "importPreset": "nab-csv", "importReady": true },
+        { "id": "cba-cc", "label": "CommBank credit card", "importPreset": "cba-csv", "importReady": false },
+        { "id": "westpac-cc", "label": "Westpac credit card", "importPreset": "westpac-csv", "importReady": false },
+        { "id": "anz-cc", "label": "ANZ credit card", "importPreset": "anz-csv", "importReady": false },
+        { "id": "macquarie-cc", "label": "Macquarie credit card", "importPreset": null, "importReady": false },
+        { "id": "coles-mastercard", "label": "Coles Mastercard", "importPreset": null, "importReady": false },
+        { "id": "woolworths-card", "label": "Woolworths credit card", "importPreset": null, "importReady": false },
+        { "id": "latitude", "label": "Latitude Financial", "importPreset": null, "importReady": false },
+        { "id": "gem-visa", "label": "Gem Visa", "importPreset": null, "importReady": false },
+        { "id": "david-jones-card", "label": "David Jones card", "importPreset": null, "importReady": false },
+        { "id": "kogan-card", "label": "Kogan credit card", "importPreset": null, "importReady": false }
+      ]
+    },
+    {
+      "id": "broker",
+      "label": "Share brokers & investing",
+      "institutions": [
+        { "id": "commsec", "label": "CommSec", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "stake", "label": "Stake", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "selfwealth", "label": "SelfWealth", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "pearler", "label": "Pearler", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "superhero", "label": "Superhero", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "ibkr", "label": "Interactive Brokers", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "etoro", "label": "eToro", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "cmc-markets", "label": "CMC Markets", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "bell-direct", "label": "Bell Direct", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "opentrader", "label": "OpenTrader", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] },
+        { "id": "vanguard-pi", "label": "Vanguard Personal Investor", "importPreset": null, "importReady": false, "reviewHints": ["cgt", "dividends"] }
+      ]
+    },
+    {
+      "id": "wealth",
+      "label": "Wealth & wrap platforms",
+      "institutions": [
+        { "id": "bt", "label": "BT Financial Group", "importPreset": null, "importReady": false, "reviewHints": ["dividends"] },
+        { "id": "netwealth", "label": "Netwealth", "importPreset": null, "importReady": false },
+        { "id": "hub24", "label": "HUB24", "importPreset": null, "importReady": false },
+        { "id": "mason-stevens", "label": "Mason Stevens", "importPreset": null, "importReady": false },
+        { "id": "praemium", "label": "Praemium", "importPreset": null, "importReady": false },
+        { "id": "cfs-invest", "label": "Colonial First State (investment)", "importPreset": null, "importReady": false }
+      ]
+    },
+    {
+      "id": "super",
+      "label": "Superannuation funds",
+      "institutions": [
+        { "id": "australiansuper", "label": "AustralianSuper", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "art", "label": "Australian Retirement Trust", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "hostplus", "label": "Hostplus", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "unisuper", "label": "UniSuper", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "rest", "label": "REST Super", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "hesta", "label": "HESTA", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "sunsuper", "label": "Sunsuper", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "caresuper", "label": "CareSuper", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "spirit-super", "label": "Spirit Super", "importPreset": null, "importReady": false, "reviewHints": ["super-in-fund"] },
+        { "id": "smsf", "label": "Self-managed super fund (SMSF)", "importPreset": null, "importReady": false, "reviewHints": ["smsf-warning"] }
+      ]
+    },
+    {
+      "id": "lender",
+      "label": "Home loan lenders",
+      "institutions": [
+        { "id": "nab-home-loan", "label": "NAB home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "cba-home-loan", "label": "CommBank home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "westpac-home-loan", "label": "Westpac home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "anz-home-loan", "label": "ANZ home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "macquarie-home-loan", "label": "Macquarie home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "ing-home-loan", "label": "ING home loan", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "athena", "label": "Athena Home Loans", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "loans-com-au", "label": "loans.com.au", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] },
+        { "id": "pepper-money", "label": "Pepper Money", "importPreset": null, "importReady": false, "reviewHints": ["wfh-mortgage"] }
+      ]
+    },
+    {
+      "id": "phi",
+      "label": "Private health insurers",
+      "institutions": [
+        { "id": "bupa", "label": "Bupa", "importPreset": null, "importReady": false, "reviewHints": ["phi"] },
+        { "id": "medibank", "label": "Medibank", "importPreset": null, "importReady": false, "reviewHints": ["phi"] },
+        { "id": "hcf", "label": "HCF", "importPreset": null, "importReady": false, "reviewHints": ["phi"] },
+        { "id": "nib", "label": "NIB", "importPreset": null, "importReady": false, "reviewHints": ["phi"] },
+        { "id": "ahm", "label": "ahm", "importPreset": null, "importReady": false, "reviewHints": ["phi"] },
+        { "id": "gmhba", "label": "GMHBA", "importPreset": null, "importReady": false, "reviewHints": ["phi"] }
+      ]
+    }
+  ]
+}

@@ -11,8 +11,11 @@ export const phiMedicareSpouseModule: ReviewModule = {
         id: "phi-none",
         module: "phi-medicare-spouse",
         severity: "info",
-        question:
-          "No private health cover recorded — could Medicare levy surcharge apply based on income?",
+        title: "No private health cover — check Medicare levy surcharge",
+        explanation:
+          "Without eligible private hospital cover, you may owe the Medicare levy surcharge (MLS) if your income exceeds the threshold. MLS is on top of the standard Medicare levy — it's not the same as having no Medicare.",
+        nextStep:
+          "Compare your taxable income to the MLS thresholds in myTax. If you're over the limit and had no hospital cover for the full year, budget for the surcharge.",
         relatedCategory: "H",
       });
     }
@@ -22,9 +25,11 @@ export const phiMedicareSpouseModule: ReviewModule = {
         id: "spouse-income",
         module: "phi-medicare-spouse",
         severity: "info",
-        question:
-          "Spouse taxable income affects family MLS thresholds and some offsets — entered correctly in myTax?",
-        detail: `Spouse income: $${ctx.spouseTaxableIncomeAud.toFixed(2)} (family MLS threshold reference $${rates.medicareLevySurchargeThresholds.family})`,
+        title: "Spouse income affects family MLS thresholds",
+        explanation: `You've recorded spouse taxable income of $${ctx.spouseTaxableIncomeAud.toFixed(2)}. For MLS and some offsets, the ATO uses combined family income — the family threshold ($${rates.medicareLevySurchargeThresholds.family.toLocaleString()} for FY ${ctx.financialYear}) is higher than the single threshold.`,
+        nextStep:
+          "Enter spouse details accurately in myTax. If you're married or de facto, the family threshold applies even if you file separately.",
+        detail: `Spouse income: $${ctx.spouseTaxableIncomeAud.toFixed(2)}`,
       });
     }
 

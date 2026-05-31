@@ -8,7 +8,8 @@ echo ""
 command -v node >/dev/null || { echo "Install Node.js from https://nodejs.org"; exit 1; }
 npm install --no-fund --no-audit
 [[ -f .env ]] || cp .env.example .env
-mkdir -p data/receipts data/exports
+mkdir -p data/receipts data/exports public
+cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs
 echo ""
 echo "  Done! Run: npm run dev"
 echo "  Open:    http://127.0.0.1:3000"
