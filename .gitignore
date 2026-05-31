@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+data/
+.env
+.env.local
+*.db
+*.db-journal
+.DS_Store
+coverage/
+dist/
+drizzle/meta/

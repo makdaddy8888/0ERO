@@ -1,0 +1,15 @@
+# 0ERO is local-first: run `npm run dev` on 127.0.0.1 for now.
+# Optional future container layout (commented until Docker support ships).
+
+# services:
+#   app:
+#     build: .
+#     ports:
+#       - "127.0.0.1:3000:3000"
+#     volumes:
+#       - ./data:/app/data
+#     environment:
+#       - DATABASE_PATH=/app/data/ledger.db
+#     network_mode: none  # strict local-only when enabled
+
+version: "3.9"

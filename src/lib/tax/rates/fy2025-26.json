@@ -1,0 +1,11 @@
+{
+  "financialYear": "2025-26",
+  "wfhFixedRatePerHourAud": 0.67,
+  "carCentsPerKm": 0.88,
+  "carCentsPerKmMaxKm": 5000,
+  "evidenceThresholdAud": 300,
+  "medicareLevySurchargeThresholds": {
+    "single": 97000,
+    "family": 194000
+  }
+}
