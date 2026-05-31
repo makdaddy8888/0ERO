@@ -12,7 +12,7 @@ None (GSD domain skills not installed)
 
 ## Phases
 
-- [ ] **Phase 1: Discovery persistence & gate** — SQLite profile, migrate localStorage, block `/import`
+- [x] **Phase 1: Discovery persistence & gate** — SQLite profile, migrate localStorage, block `/import`
 - [ ] **Phase 2: Question wizard** — JSON question banks, phase runner, BMAD 8-phase flow
 - [ ] **Phase 3: Import → ledger** — Persist transactions, wire review context from DB
 - [ ] **Phase 4: Hardening & tests** — Gate tests, migration tests, parser routing fixes
@@ -26,9 +26,9 @@ None (GSD domain skills not installed)
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Schema + migration + discovery repository (`discovery-repository.ts`)
-- [ ] 01-02: Server Actions + localStorage migration + Setup form wired to SQLite
-- [ ] 01-03: Import gate + pass server profile to folder import form
+- [x] 01-01: Schema + migration + discovery repository (`discovery-repository.ts`)
+- [x] 01-02: Server Actions + localStorage migration + Setup form wired to SQLite
+- [x] 01-03: Import gate + pass server profile to folder import form
 
 ### Phase 2: Question wizard
 **Goal**: BMAD-inspired multi-phase intake with JSON question banks for FY 2025-26.
@@ -68,7 +68,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Discovery persistence & gate | 0/3 | Planned | - |
+| 1. Discovery persistence & gate | 3/3 | Complete | 2026-05-31 |
 | 2. Question wizard | 0/TBD | Not started | - |
 | 3. Import → ledger | 0/TBD | Not started | - |
 | 4. Hardening & tests | 0/TBD | Not started | - |

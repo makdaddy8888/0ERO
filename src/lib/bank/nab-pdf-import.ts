@@ -18,11 +18,16 @@ const MONTHS: Record<string, string> = {
 
 /** Date at start of a transaction row */
 const DATE_PREFIX =
-  /^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\s+/;
+  /^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}(?:\s+\d{2,4})?)\s+/;
 
 /** Standalone date line (common in NAB PDF column splits) */
 const DATE_ONLY =
-  /^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})$/;
+  /^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}(?:\s+\d{2,4})?)$/;
+
+export type NabPdfParseOptions = {
+  /** Statement date from filename (YYYY-MM-DD) — used to infer year on short dates like "02 Dec". */
+  statementDate?: string | null;
+};
 
 const AMOUNT_ONLY =
   /^(-?\$?\s*[\d,]+\.\d{2})\s*(CR|DR)?\.?\s*$/i;
@@ -31,7 +36,7 @@ const SKIP_LINE =
   /^(date|transaction|details|debits|credits|balance|opening|closing|brought forward|carried forward|account number|bsb|page|continued|total|subtotal|national australia bank|\d+\s+of\s+\d+)$/i;
 
 const SKIP_CONTAINS =
-  /statement period|minimum payment|credit limit|available credit|closing balance|opening balance|payment due|interest rate|annual fee|nab\.com/i;
+  /statement period|minimum payment|credit limit|available credit|closing balance|opening balance|payment due|interest rate|annual fee|nab\.com|purchases and cash|payments and credits|interest charges|cash advances|reward points/i;
 
 const CREDIT_HINT =
   /\b(direct credit|salary|deposit|refund|payment received|thank you|transfer from|interest paid)\b/i;
@@ -39,17 +44,22 @@ const CREDIT_HINT =
 /**
  * Parse NAB account / credit card statement text extracted from a PDF.
  */
-export function parseNabPdfLines(lines: string[]): ParseResult {
+export function parseNabPdfLines(
+  lines: string[],
+  options: NabPdfParseOptions = {},
+): ParseResult {
   const normalized = lines
     .map((l) => l.replace(/\s+/g, " ").trim())
     .filter(Boolean);
 
-  let transactions = parseSingleLineRows(normalized);
+  const statementDate = options.statementDate ?? null;
+
+  let transactions = parseSingleLineRows(normalized, statementDate);
   if (transactions.length === 0) {
-    transactions = parseMultiLineRows(normalized);
+    transactions = parseMultiLineRows(normalized, statementDate);
   }
   if (transactions.length === 0) {
-    transactions = parseInlineScan(normalized.join(" "));
+    transactions = parseInlineScan(normalized.join(" "), statementDate);
   }
 
   if (transactions.length === 0) {
@@ -63,23 +73,36 @@ export function parseNabPdfLines(lines: string[]): ParseResult {
   };
 }
 
-export function parseNabPdfText(text: string): ParseResult {
+export function parseNabPdfText(text: string, options: NabPdfParseOptions = {}): ParseResult {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  return parseNabPdfLines(lines);
+  return parseNabPdfLines(lines, options);
 }
 
-function parseSingleLineRows(lines: string[]): ParsedTransaction[] {
+function inferYearForMonth(monthNum: number, statementDate?: string | null): string {
+  if (!statementDate) return String(new Date().getFullYear());
+  const [sy, sm] = statementDate.split("-").map(Number);
+  if (monthNum > sm) return String(sy - 1);
+  return String(sy);
+}
+
+function parseSingleLineRows(
+  lines: string[],
+  statementDate?: string | null,
+): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   for (const line of lines) {
     if (shouldSkipLine(line)) continue;
-    const tx = parsePdfTransactionLine(line);
+    const tx = parsePdfTransactionLine(line, statementDate);
     if (tx) transactions.push(tx);
   }
   return transactions;
 }
 
 /** NAB PDFs often split date, merchant, and amount onto separate lines. */
-function parseMultiLineRows(lines: string[]): ParsedTransaction[] {
+function parseMultiLineRows(
+  lines: string[],
+  statementDate?: string | null,
+): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   let pendingDate: string | null = null;
   let pendingDesc: string[] = [];
@@ -109,7 +132,7 @@ function parseMultiLineRows(lines: string[]): ParsedTransaction[] {
 
     const dateOnly = line.match(DATE_ONLY);
     if (dateOnly) {
-      const postedAt = parsePdfDate(dateOnly[1]);
+      const postedAt = parsePdfDate(dateOnly[1], statementDate);
       if (postedAt) {
         pendingDate = postedAt;
         pendingDesc = [];
@@ -122,7 +145,7 @@ function parseMultiLineRows(lines: string[]): ParsedTransaction[] {
       continue;
     }
 
-    const inline = parsePdfTransactionLine(line);
+    const inline = parsePdfTransactionLine(line, statementDate);
     if (inline) {
       transactions.push(inline);
       pendingDate = null;
@@ -139,18 +162,18 @@ function parseMultiLineRows(lines: string[]): ParsedTransaction[] {
 }
 
 /** Last resort: find date + text + amount patterns in flattened PDF text. */
-function parseInlineScan(text: string): ParsedTransaction[] {
+function parseInlineScan(text: string, statementDate?: string | null): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   const pattern =
-    /(\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.{3,80}?)\s+(\$?\s*[\d,]+\.\d{2})\s*(CR|DR)?/gi;
+    /(\d{1,2}\s+[A-Za-z]{3}(?:\s+\d{2,4})?|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.{3,80}?)\s+(\$?\s*[\d,]+\.\d{2})\s*(CR|DR)?/gi;
 
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(text)) !== null) {
-    const postedAt = parsePdfDate(match[1]);
+    const postedAt = parsePdfDate(match[1], statementDate);
     if (!postedAt) continue;
 
-    const description = match[2].trim();
-    if (shouldSkipLine(description)) continue;
+    const description = stripLeadingSecondDate(match[2].trim());
+    if (!description || shouldSkipLine(description)) continue;
 
     const amountCents = resolveAmount(parseAudToCents(match[3]), match[4], description);
     if (amountCents === 0) continue;
@@ -161,14 +184,17 @@ function parseInlineScan(text: string): ParsedTransaction[] {
   return dedupeTransactions(transactions);
 }
 
-function parsePdfTransactionLine(line: string): ParsedTransaction | null {
+function parsePdfTransactionLine(
+  line: string,
+  statementDate?: string | null,
+): ParsedTransaction | null {
   const dateMatch = line.match(DATE_PREFIX);
   if (!dateMatch) return null;
 
-  const postedAt = parsePdfDate(dateMatch[1]);
+  const postedAt = parsePdfDate(dateMatch[1], statementDate);
   if (!postedAt) return null;
 
-  let rest = line.slice(dateMatch[0].length).trim();
+  let rest = stripLeadingSecondDate(line.slice(dateMatch[0].length).trim());
   if (!rest || /opening balance|closing balance/i.test(rest)) return null;
 
   const { description, values, crdr } = extractTrailingAmounts(rest);
@@ -209,15 +235,20 @@ function buildTx(
   };
 }
 
-function parsePdfDate(raw: string): string | null {
+function parsePdfDate(raw: string, statementDate?: string | null): string | null {
   const iso = normalizeDate(raw);
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
 
-  const text = raw.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{2,4})$/);
+  const text = raw.match(/^(\d{1,2})\s+([A-Za-z]{3})(?:\s+(\d{2,4}))?$/);
   if (text) {
     const month = MONTHS[text[2].toLowerCase()];
     if (!month) return null;
-    const year = text[3].length === 2 ? `20${text[3]}` : text[3];
+    const monthNum = Number(month);
+    const year = text[3]
+      ? text[3].length === 2
+        ? `20${text[3]}`
+        : text[3]
+      : inferYearForMonth(monthNum, statementDate);
     return `${year}-${month}-${text[1].padStart(2, "0")}`;
   }
 
@@ -228,6 +259,15 @@ function parsePdfDate(raw: string): string | null {
   }
 
   return null;
+}
+
+/** NAB credit card rows often repeat transaction + post date at the start. */
+function stripLeadingSecondDate(text: string): string {
+  const duplicate = text.match(
+    /^(\d{1,2}\s+[A-Za-z]{3}(?:\s+\d{2,4})?|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+/,
+  );
+  if (duplicate) return text.slice(duplicate[0].length).trim();
+  return text;
 }
 
 function extractTrailingAmounts(rest: string): {

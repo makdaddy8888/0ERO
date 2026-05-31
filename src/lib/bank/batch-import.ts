@@ -1,3 +1,5 @@
+"use client";
+
 import { classifyDocument } from "./classify-document";
 import { detectWrongImportFile } from "./detect-import-file";
 import { analyseAccountGaps } from "@/lib/discovery/account-gaps";
@@ -9,7 +11,7 @@ import type {
 } from "./import-types";
 import { parseAmexCsv } from "./amex-import";
 import { parseNabCsv } from "./nab-import";
-import { parseNabPdfLines } from "./nab-pdf-import";
+import { parseNabPdfLines, parseNabStatementFilename } from "./nab-pdf-import";
 import { extractPdfLinesFromFile } from "./pdf-extract";
 import type { ParsedTransaction } from "./types";
 
@@ -52,6 +54,14 @@ export async function processImportFolder(
   };
 }
 
+function classifyFileEarly(fileName: string, fileKind: "csv" | "pdf") {
+  return classifyDocument({
+    fileName,
+    textSample: "",
+    isPdf: fileKind === "pdf",
+  });
+}
+
 async function processOneFile(file: File): Promise<ProcessedFile> {
   const relativePath = file.webkitRelativePath || file.name;
   const id = hashId(relativePath);
@@ -62,14 +72,7 @@ async function processOneFile(file: File): Promise<ProcessedFile> {
     fileName: file.name,
     relativePath,
     fileKind,
-    classification: {
-      institutionId: null,
-      institutionLabel: "Unknown institution",
-      accountCategory: "unknown",
-      accountLabel: "Unknown",
-      confidence: "low",
-      signals: [],
-    },
+    classification: classifyFileEarly(file.name, fileKind),
     parseStatus: "failed",
     parseFormat: null,
     transactionCount: 0,
@@ -83,8 +86,14 @@ async function processOneFile(file: File): Promise<ProcessedFile> {
       return await processPdfFile(file, base);
     }
     return await processCsvFile(file, base);
-  } catch {
-    return { ...base, error: "Could not read file." };
+  } catch (err) {
+    return {
+      ...base,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Could not read file.",
+    };
   }
 }
 
@@ -120,7 +129,10 @@ async function processPdfFile(file: File, base: ProcessedFile): Promise<Processe
     };
   }
 
-  const result = parseNabPdfLines(lines);
+  const statementMeta = parseNabStatementFilename(file.name);
+  const result = parseNabPdfLines(lines, {
+    statementDate: statementMeta?.statementDate ?? null,
+  });
   if (result.transactions.length === 0) {
     const preview = lines
       .filter((l) => l.length > 4)

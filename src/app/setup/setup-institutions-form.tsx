@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getCategories,
@@ -10,14 +10,19 @@ import { deriveRegistryInstitutionIds, getProductById } from "@/lib/institutions
 import { searchSetupOptions, type SetupSearchResult } from "@/lib/institutions/search-institutions";
 import {
   getDefaultFinancialYear,
-  loadDiscoveryProfile,
-  saveDiscoveryProfile,
   type UserDiscoveryProfile,
 } from "@/lib/discovery/user-discovery";
+import { migrateLocalStorageIfNeeded } from "@/lib/discovery/migrate-local-storage";
+import {
+  isDuplicateCustomLabel,
+  normalizeCustomProductLabel,
+} from "@/lib/discovery/custom-products";
+import { getSetupProfileAction, saveSetupProfileAction } from "@/app/setup/actions";
 
 type SelectedItem =
   | { kind: "product"; id: string; label: string; subtitle: string; importReady?: boolean }
-  | { kind: "institution"; id: string; label: string; subtitle: string; importReady?: boolean };
+  | { kind: "institution"; id: string; label: string; subtitle: string; importReady?: boolean }
+  | { kind: "custom"; id: string; label: string; subtitle: string };
 
 function hitLabel(hit: SetupSearchResult): string {
   return hit.kind === "product" ? hit.product.label : hit.institution.label;
@@ -36,31 +41,51 @@ function isSelected(
 }
 
 export function SetupInstitutionsForm() {
+  const router = useRouter();
   const categories = getCategories();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [customProductLabels, setCustomProductLabels] = useState<Set<string>>(new Set());
   const [selectedInstitutions, setSelectedInstitutions] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const suggestions = useMemo(() => searchSetupOptions(query, 10), [query]);
 
   useEffect(() => {
-    const profile = loadDiscoveryProfile();
-    if (profile) {
-      setSelectedProducts(new Set(profile.confirmedProductIds ?? []));
-      setSelectedInstitutions(
-        new Set(
-          profile.confirmedDirectInstitutionIds ??
-            (profile.confirmedProductIds?.length ? [] : profile.confirmedInstitutionIds),
-        ),
-      );
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const migrated = await migrateLocalStorageIfNeeded(saveSetupProfileAction);
+        const profile = migrated ?? (await getSetupProfileAction());
+        if (cancelled) return;
+
+        if (profile) {
+          setSelectedProducts(new Set(profile.confirmedProductIds ?? []));
+          setCustomProductLabels(new Set(profile.confirmedCustomProductLabels ?? []));
+          setSelectedInstitutions(
+            new Set(
+              profile.confirmedDirectInstitutionIds ??
+                (profile.confirmedProductIds?.length ? [] : profile.confirmedInstitutionIds),
+            ),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
     }
-    setLoaded(true);
+
+    void loadProfile();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -80,6 +105,40 @@ export function SetupInstitutionsForm() {
       setQuery("");
       setDropdownOpen(false);
       inputRef.current?.focus();
+    },
+    [markDirty],
+  );
+
+  const addCustomProduct = useCallback(
+    (raw: string) => {
+      const label = normalizeCustomProductLabel(raw);
+      if (!label) return false;
+
+      const allCustom = [...customProductLabels];
+      if (isDuplicateCustomLabel(label, allCustom)) {
+        setQuery("");
+        setDropdownOpen(false);
+        return true;
+      }
+
+      setCustomProductLabels((prev) => new Set(prev).add(label));
+      markDirty();
+      setQuery("");
+      setDropdownOpen(false);
+      inputRef.current?.focus();
+      return true;
+    },
+    [customProductLabels, markDirty],
+  );
+
+  const removeCustomProduct = useCallback(
+    (label: string) => {
+      setCustomProductLabels((prev) => {
+        const next = new Set(prev);
+        next.delete(label);
+        return next;
+      });
+      markDirty();
     },
     [markDirty],
   );
@@ -136,6 +195,15 @@ export function SetupInstitutionsForm() {
       });
     }
 
+    for (const label of customProductLabels) {
+      items.push({
+        kind: "custom",
+        id: label,
+        label,
+        subtitle: "Custom",
+      });
+    }
+
     for (const id of selectedInstitutions) {
       const inst = getInstitutionById(id);
       if (!inst) continue;
@@ -149,24 +217,48 @@ export function SetupInstitutionsForm() {
     }
 
     return items.sort((a, b) => a.label.localeCompare(b.label));
-  }, [selectedProducts, selectedInstitutions]);
+  }, [selectedProducts, customProductLabels, selectedInstitutions]);
 
-  const totalCount = selectedProducts.size + selectedInstitutions.size;
+  const totalCount =
+    selectedProducts.size + customProductLabels.size + selectedInstitutions.size;
 
-  const onSave = () => {
+  const trimmedQuery = query.trim();
+  const customQueryLabel = normalizeCustomProductLabel(trimmedQuery);
+  const canAddCustom =
+    customQueryLabel != null &&
+    !isDuplicateCustomLabel(customQueryLabel, customProductLabels);
+
+  const onSave = async () => {
+    if (totalCount === 0) {
+      setSaveError("Add at least one account or product before continuing.");
+      return;
+    }
+
     const productIds = [...selectedProducts].sort();
+    const customLabels = [...customProductLabels].sort();
     const directInstitutionIds = [...selectedInstitutions].sort();
     const institutionIds = deriveRegistryInstitutionIds(productIds, directInstitutionIds);
 
     const profile: UserDiscoveryProfile = {
       confirmedInstitutionIds: institutionIds,
       confirmedProductIds: productIds,
+      confirmedCustomProductLabels: customLabels,
       confirmedDirectInstitutionIds: directInstitutionIds,
       financialYear: getDefaultFinancialYear(),
       updatedAt: new Date().toISOString(),
     };
-    saveDiscoveryProfile(profile);
-    setSaved(true);
+
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await saveSetupProfileAction(profile);
+      setSaved(true);
+      router.push("/import");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Could not save setup.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const pickSuggestion = (index: number) => {
@@ -186,6 +278,8 @@ export function SetupInstitutionsForm() {
       e.preventDefault();
       if (dropdownOpen && suggestions.length > 0) {
         pickSuggestion(highlightIndex);
+      } else if (canAddCustom && customQueryLabel) {
+        addCustomProduct(customQueryLabel);
       }
     } else if (e.key === "Escape") {
       setDropdownOpen(false);
@@ -200,8 +294,8 @@ export function SetupInstitutionsForm() {
     <div className="space-y-8">
       <p className="text-sm text-zinc-400">
         Type a product name — e.g. &ldquo;NAB iSaver&rdquo;, &ldquo;Low Rate Card&rdquo;, or
-        &ldquo;home loan offset&rdquo;. Suggestions appear as you type. You can also browse and
-        tick institutions below.
+        &ldquo;home loan offset&rdquo;. Suggestions appear as you type. If yours isn&apos;t listed,
+        press Enter or choose &ldquo;Add custom&rdquo; below. You can also browse institutions.
       </p>
 
       <section className="space-y-4">
@@ -236,11 +330,30 @@ export function SetupInstitutionsForm() {
               className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-white/10 bg-ground-200 py-1 shadow-agent-lg"
             >
               {suggestions.length === 0 ? (
-                <li className="px-4 py-3 text-sm text-zinc-500">
-                  No match for &ldquo;{query}&rdquo; — try fewer words or browse below.
-                </li>
+                canAddCustom && customQueryLabel ? (
+                  <li role="option">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => addCustomProduct(customQueryLabel)}
+                      className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left text-sm text-zinc-300 transition hover:bg-white/5"
+                    >
+                      <span className="font-medium text-agent-300">
+                        Add custom: &ldquo;{customQueryLabel}&rdquo;
+                      </span>
+                      <span className="text-xs text-zinc-500">
+                        Not in our catalog — we&apos;ll remember this name for gap checks
+                      </span>
+                    </button>
+                  </li>
+                ) : (
+                  <li className="px-4 py-3 text-sm text-zinc-500">
+                    Type a product name to add it, or browse institutions below.
+                  </li>
+                )
               ) : (
-                suggestions.map((hit, index) => {
+                <>
+                  {suggestions.map((hit, index) => {
                   const already = isSelected(hit, selectedProducts, selectedInstitutions);
                   const isProduct = hit.kind === "product";
                   return (
@@ -271,7 +384,23 @@ export function SetupInstitutionsForm() {
                       </button>
                     </li>
                   );
-                })
+                })}
+                  {canAddCustom && customQueryLabel ? (
+                    <li role="option">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => addCustomProduct(customQueryLabel)}
+                        className="flex w-full flex-col gap-0.5 border-t border-white/10 px-4 py-2.5 text-left text-sm text-zinc-300 transition hover:bg-white/5"
+                      >
+                        <span className="font-medium text-agent-300">
+                          Add custom: &ldquo;{customQueryLabel}&rdquo;
+                        </span>
+                        <span className="text-xs text-zinc-500">Not in catalog</span>
+                      </button>
+                    </li>
+                  ) : null}
+                </>
               )}
             </ul>
           ) : null}
@@ -298,11 +427,11 @@ export function SetupInstitutionsForm() {
                     <span className="text-xs text-zinc-500">{item.subtitle}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        item.kind === "product"
-                          ? removeProduct(item.id)
-                          : removeInstitution(item.id)
-                      }
+                      onClick={() => {
+                        if (item.kind === "product") removeProduct(item.id);
+                        else if (item.kind === "custom") removeCustomProduct(item.id);
+                        else removeInstitution(item.id);
+                      }}
                       className="rounded-full p-0.5 text-zinc-400 transition hover:bg-white/10 hover:text-red-300"
                       aria-label={`Remove ${item.label}`}
                     >
@@ -364,18 +493,26 @@ export function SetupInstitutionsForm() {
       </section>
 
       <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-6">
-        <button type="button" onClick={onSave} className="agent-btn">
-          Save selections
+        <button
+          type="button"
+          onClick={() => void onSave()}
+          disabled={saving || totalCount === 0}
+          className="agent-btn disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save and continue"}
         </button>
         {saved ? (
           <span className="text-sm text-emerald-400">
-            Saved locally — {totalCount} item{totalCount === 1 ? "" : "s"}
+            Saved — {totalCount} item{totalCount === 1 ? "" : "s"}
           </span>
         ) : null}
-        {totalCount > 0 ? (
-          <Link href="/import" className="text-sm text-agent-pink-400 hover:underline">
-            Continue to import →
-          </Link>
+        {saveError ? (
+          <span className="text-sm text-red-400">{saveError}</span>
+        ) : null}
+        {totalCount > 0 && !saving ? (
+          <span className="text-sm text-zinc-500">
+            Saves your selections and opens Import
+          </span>
         ) : null}
       </div>
     </div>

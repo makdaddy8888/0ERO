@@ -47,6 +47,39 @@ Date Transaction Details Debits Credits Balance
     expect(transactions[1].amountCents).toBe(120000);
   });
 
+  it("parses short dates without year using statement filename date", () => {
+    const lines = [
+      "02 Dec",
+      "WOOLWORTHS 1234 SYDNEY NSW",
+      "45.50",
+      "03 Dec",
+      "PAYMENT RECEIVED - THANK YOU",
+      "1,200.00 CR",
+    ];
+    const { transactions } = parseNabPdfLines(lines, {
+      statementDate: "2025-12-02",
+    });
+    expect(transactions).toHaveLength(2);
+    expect(transactions[0].postedAt).toBe("2025-12-02");
+    expect(transactions[1].postedAt).toBe("2025-12-03");
+  });
+
+  it("parses duplicate transaction and post dates on one line", () => {
+    const lines = [
+      "02 Dec 2025 02 Dec 2025 WOOLWORTHS 1234 SYDNEY NSW 45.50",
+    ];
+    const { transactions } = parseNabPdfLines(lines);
+    expect(transactions).toHaveLength(1);
+    expect(transactions[0].description).toBe("WOOLWORTHS 1234 SYDNEY NSW");
+  });
+
+  it("parses 8255 NAB credit card statement filename", () => {
+    expect(parseNabStatementFilename("8255-20251202-statement.pdf")).toEqual({
+      last4: "8255",
+      statementDate: "2025-12-02",
+    });
+  });
+
   it("parses amounts with CR suffix on one line", () => {
     const lines = ["15 Nov 2025 PAYMENT RECEIVED 500.00 CR"];
     const { transactions } = parseNabPdfLines(lines);

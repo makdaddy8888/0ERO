@@ -1,6 +1,9 @@
 import { getCategoryIdForInstitution, getInstitutionById } from "@/lib/institutions";
 import type { AccountGapQuestion, DiscoveredAccount, ProcessedFile } from "@/lib/bank/import-types";
-import type { UserDiscoveryProfile } from "@/lib/discovery/user-discovery";
+import {
+  hasConfirmedAccounts,
+  type UserDiscoveryProfile,
+} from "@/lib/discovery/user-discovery";
 
 /** FY 2025-26 bounds for coverage checks */
 const FY_START = "2025-07-01";
@@ -28,7 +31,7 @@ export function analyseAccountGaps(
 ): AccountGapQuestion[] {
   const gaps: AccountGapQuestion[] = [];
 
-  if (!profile || profile.confirmedInstitutionIds.length === 0) {
+  if (!profile || !hasConfirmedAccounts(profile)) {
     gaps.push({
       id: "setup-incomplete",
       severity: "action",
@@ -38,7 +41,7 @@ export function analyseAccountGaps(
       nextStep: "Open Setup, tick every institution that applies to you, then re-import your folder.",
     });
   } else {
-    gaps.push(...gapsForConfirmedInstitutions(accounts, profile));
+    gaps.push(...gapsForConfirmedInstitutions(accounts, files, profile));
     gaps.push(...gapsForDateCoverage(accounts));
   }
 
@@ -83,6 +86,7 @@ export function analyseAccountGaps(
 
 function gapsForConfirmedInstitutions(
   accounts: DiscoveredAccount[],
+  files: ProcessedFile[],
   profile: UserDiscoveryProfile,
 ): AccountGapQuestion[] {
   const gaps: AccountGapQuestion[] = [];
@@ -91,7 +95,7 @@ function gapsForConfirmedInstitutions(
     const inst = getInstitutionById(instId);
     if (!inst) continue;
 
-    if (institutionWasFound(instId, accounts)) continue;
+    if (institutionWasFound(instId, accounts, files)) continue;
 
     const categoryId = getCategoryIdForInstitution(instId);
     const categoryHint = categoryId ? CATEGORY_LABELS[categoryId] ?? null : null;
@@ -110,41 +114,99 @@ function gapsForConfirmedInstitutions(
   return gaps;
 }
 
-function institutionWasFound(instId: string, accounts: DiscoveredAccount[]): boolean {
+function institutionWasFound(
+  instId: string,
+  accounts: DiscoveredAccount[],
+  files: ProcessedFile[] = [],
+): boolean {
   const categoryId = getCategoryIdForInstitution(instId);
   const baseId = instId.replace(/-cc$/, "");
 
-  return accounts.some((a) => {
-    if (a.institutionId === instId) return true;
+  if (accounts.some((a) => accountMatchesInstitution(instId, categoryId, baseId, a))) {
+    return true;
+  }
 
-    if (categoryId === "credit_card") {
-      return (
-        a.accountCategory === "credit_card" &&
-        (a.institutionId === instId || a.institutionId === baseId)
-      );
-    }
+  return files.some((f) =>
+    fileMatchesInstitution(instId, categoryId, baseId, f),
+  );
+}
 
-    if (categoryId === "bank") {
-      return (
-        a.institutionId === instId &&
-        (a.accountCategory === "everyday" || a.accountCategory === "savings")
-      );
-    }
+function accountMatchesInstitution(
+  instId: string,
+  categoryId: string | null | undefined,
+  baseId: string,
+  account: DiscoveredAccount,
+): boolean {
+  if (account.institutionId === instId) return true;
 
-    if (categoryId === "broker") {
-      return a.institutionId === instId && a.accountCategory === "broker";
-    }
+  if (categoryId === "credit_card") {
+    return (
+      account.accountCategory === "credit_card" &&
+      (account.institutionId === instId || account.institutionId === baseId)
+    );
+  }
 
-    if (categoryId === "wealth") {
-      return a.institutionId === instId && a.accountCategory === "wealth";
-    }
+  if (categoryId === "bank") {
+    return (
+      account.institutionId === instId &&
+      (account.accountCategory === "everyday" || account.accountCategory === "savings")
+    );
+  }
 
-    if (categoryId === "home_loan") {
-      return a.institutionId === instId && a.accountCategory === "home_loan";
-    }
+  if (categoryId === "broker") {
+    return account.institutionId === instId && account.accountCategory === "broker";
+  }
 
-    return a.institutionId === instId;
-  });
+  if (categoryId === "wealth") {
+    return account.institutionId === instId && account.accountCategory === "wealth";
+  }
+
+  if (categoryId === "home_loan") {
+    return account.institutionId === instId && account.accountCategory === "home_loan";
+  }
+
+  return account.institutionId === instId;
+}
+
+function fileMatchesInstitution(
+  instId: string,
+  categoryId: string | null | undefined,
+  baseId: string,
+  file: ProcessedFile,
+): boolean {
+  const { classification } = file;
+  const fileInstId = classification.institutionId;
+
+  if (!fileInstId) return false;
+
+  if (categoryId === "credit_card") {
+    return (
+      classification.accountCategory === "credit_card" &&
+      (fileInstId === instId || fileInstId === baseId)
+    );
+  }
+
+  if (categoryId === "bank") {
+    return (
+      fileInstId === instId &&
+      (classification.accountCategory === "everyday" ||
+        classification.accountCategory === "savings")
+    );
+  }
+
+  if (categoryId === "broker") {
+    return fileInstId === instId && classification.accountCategory === "broker";
+  }
+
+  if (categoryId === "wealth") {
+    return fileInstId === instId && classification.accountCategory === "wealth";
+  }
+
+  if (categoryId === "home_loan") {
+    return fileInstId === instId && classification.accountCategory === "home_loan";
+  }
+
+  return fileInstId === instId;
 }
 
 function gapsForDateCoverage(accounts: DiscoveredAccount[]): AccountGapQuestion[] {

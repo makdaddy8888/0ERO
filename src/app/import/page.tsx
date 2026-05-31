@@ -1,7 +1,33 @@
 import Link from "next/link";
+import { isDiscoveryComplete as isProfileComplete } from "@/lib/discovery/user-discovery";
+import { loadDiscoveryProfile } from "@/lib/discovery/discovery-repository";
 import { FolderImportForm } from "./folder-import-form";
+import { ImportGate } from "./import-gate";
+import { ImportDbError } from "./import-db-error";
 
-export default function ImportPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ImportPage() {
+  let profile = null;
+  try {
+    // Profile loaded from SQLite on the server — not localStorage.
+    profile = await loadDiscoveryProfile();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not open local database.";
+    console.error("[0ERO import]", error);
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-50">Import financial documents</h1>
+        </div>
+        <ImportDbError message={message} />
+      </div>
+    );
+  }
+
+  const complete = isProfileComplete(profile);
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,7 +45,11 @@ export default function ImportPage() {
         </p>
       </div>
 
-      <FolderImportForm />
+      {complete && profile ? (
+        <FolderImportForm profile={profile} />
+      ) : (
+        <ImportGate />
+      )}
     </div>
   );
 }

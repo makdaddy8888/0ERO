@@ -5,29 +5,29 @@
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** Users can confidently prepare their FY return from local data — with no personal information leaving their machine.
-**Current focus:** v0.2 — Setup & discovery (GSD Phase 1)
+**Current focus:** Phase 2 — Question wizard
 
 ## Current Position
 
-Phase: 1 of 4 (Discovery persistence & gate)
-Plan: 0 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-05-31 — Phase 1 planned (3 plans in `.planning/phases/01-discovery-persistence/`)
+Phase: 2 of 4 (Question wizard)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-05-31 — Phase 1 executed (SQLite discovery + import gate)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: —
-- Total execution time: 0 hours
+- Total execution time: —
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| — | — | — | — |
+| 1. Discovery persistence | 3 | 3 | — |
 
 **Recent Trend:** Not enough data
 
@@ -35,9 +35,9 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-See PROJECT.md Key Decisions. Recent:
-- GSD brownfield workflow chosen for v0.2 execution
-- Codebase map complete in `.planning/codebase/`
+- Discovery profile stored in SQLite `user_institutions` + `household_profile`
+- Import page `force-dynamic`; gate uses `isDiscoveryComplete()` (≥1 selection)
+- localStorage migrated once on Setup visit, then cleared
 
 ### Deferred Issues
 
@@ -49,12 +49,10 @@ None yet.
 
 ### Blockers/Concerns
 
-From codebase map — see `.planning/codebase/CONCERNS.md`:
-- SQLite unused; import/review not persisted
-- NAB-only PDF/CSV fallback for non-Amex files
+- NAB-only PDF/CSV fallback for non-Amex files (Phase 4)
 
 ## Session Continuity
 
 Last session: 2026-05-31
-Stopped at: Phase 1 planned; ready for `/gsd/execute-phase 1`
+Stopped at: Phase 1 complete; ready for `/gsd/plan-phase 2`
 Resume file: None

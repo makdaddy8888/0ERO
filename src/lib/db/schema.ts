@@ -3,6 +3,7 @@ import {
   text,
   integer,
   real,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const accounts = sqliteTable("accounts", {
@@ -71,8 +72,27 @@ export const householdProfile = sqliteTable("household_profile", {
   }),
   wfhMethodPreference: text("wfh_method_preference"),
   carMethodPreference: text("car_method_preference"),
+  setupConfirmedAt: text("setup_confirmed_at"),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const userInstitutions = sqliteTable(
+  "user_institutions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    financialYear: text("financial_year").notNull(),
+    kind: text("kind").notNull(),
+    entityId: text("entity_id").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_institutions_fy_kind_entity_unique").on(
+      table.financialYear,
+      table.kind,
+      table.entityId,
+    ),
+  ],
+);
 
 export const employerAllowances = sqliteTable("employer_allowances", {
   id: integer("id").primaryKey({ autoIncrement: true }),

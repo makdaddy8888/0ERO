@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { processImportFolder } from "@/lib/bank/batch-import";
 import { CATEGORY_LABELS } from "@/lib/bank/classify-document";
-import { loadDiscoveryProfile } from "@/lib/discovery/user-discovery";
+import type { UserDiscoveryProfile } from "@/lib/discovery/user-discovery";
 import type { BatchImportResult, ProcessedFile } from "@/lib/bank/import-types";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -20,30 +20,49 @@ const CONFIDENCE_STYLES: Record<string, string> = {
   low: "text-amber-400",
 };
 
-export function FolderImportForm() {
+export function FolderImportForm({ profile }: { profile: UserDiscoveryProfile }) {
   const [loading, setLoading] = useState(false);
   const [folderName, setFolderName] = useState<string | null>(null);
   const [result, setResult] = useState<BatchImportResult | null>(null);
+  const [processError, setProcessError] = useState<string | null>(null);
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
     const files = [...fileList];
-    if (!files.length) return;
+    if (!files.length) {
+      setProcessError(
+        "No files were selected. Choose a folder that contains .csv or .pdf bank exports.",
+      );
+      setResult(null);
+      return;
+    }
 
     setLoading(true);
     setResult(null);
+    setProcessError(null);
 
     const root = files[0]?.webkitRelativePath?.split("/")[0];
     setFolderName(root ?? `${files.length} files`);
 
     try {
-      const profile = loadDiscoveryProfile();
       const batch = await processImportFolder(files, profile);
+      if (batch.summary.totalFiles === 0) {
+        setProcessError(
+          `Found ${files.length} file${files.length === 1 ? "" : "s"} in this folder, but none were .csv or .pdf exports. Try a folder of bank CSV/PDF statements.`,
+        );
+      }
       setResult(batch);
+    } catch (err) {
+      console.error("[0ERO import]", err);
+      setProcessError(
+        err instanceof Error
+          ? err.message
+          : "Could not process folder. Try again or use CSV exports.",
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile]);
 
   const onFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -76,7 +95,6 @@ export function FolderImportForm() {
             // @ts-expect-error webkitdirectory is non-standard but widely supported
             webkitdirectory=""
             directory=""
-            accept=".csv,.pdf,text/csv,application/pdf"
             className="hidden"
             disabled={loading}
             onChange={onFolderChange}
@@ -86,6 +104,12 @@ export function FolderImportForm() {
           <p className="mt-2 text-xs text-agent-pink-400">{folderName}</p>
         ) : null}
       </div>
+
+      {processError ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+          {processError}
+        </div>
+      ) : null}
 
       {result ? (
         <>

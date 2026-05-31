@@ -1,11 +1,11 @@
-"use client";
-
 /** Browser-only PDF text extraction — runs locally, no upload. */
 
 interface PdfTextItem {
   str: string;
   transform: number[];
 }
+
+type PdfJsModule = typeof import("pdfjs-dist");
 
 export async function extractPdfLinesFromFile(file: File): Promise<string[]> {
   const buffer = await file.arrayBuffer();
@@ -14,11 +14,36 @@ export async function extractPdfLinesFromFile(file: File): Promise<string[]> {
 
 export async function extractPdfLinesFromBuffer(data: ArrayBuffer): Promise<string[]> {
   const pdfjs = await import("pdfjs-dist");
+  configurePdfWorker(pdfjs);
 
-  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+  try {
+    return await extractAllPages(pdfjs, data);
+  } catch (firstError) {
+    if (typeof window !== "undefined") {
+      const version =
+        (pdfjs as PdfJsModule & { version?: string }).version ?? "4.10.38";
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+      try {
+        return await extractAllPages(pdfjs, data);
+      } catch (retryError) {
+        throw formatPdfError(retryError, firstError);
+      }
+    }
+    throw formatPdfError(firstError);
+  }
+}
+
+function configurePdfWorker(pdfjs: PdfJsModule): void {
+  if (pdfjs.GlobalWorkerOptions.workerSrc) return;
+
+  if (typeof window !== "undefined") {
+    pdfjs.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`;
+  } else {
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   }
+}
 
+async function extractAllPages(pdfjs: PdfJsModule, data: ArrayBuffer): Promise<string[]> {
   const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
   const lines: string[] = [];
 
@@ -29,6 +54,25 @@ export async function extractPdfLinesFromBuffer(data: ArrayBuffer): Promise<stri
   }
 
   return lines;
+}
+
+function formatPdfError(error: unknown, prior?: unknown): Error {
+  const message =
+    error instanceof Error ? error.message : "Could not read PDF.";
+  const priorMessage =
+    prior instanceof Error ? prior.message : prior ? String(prior) : null;
+
+  if (/worker|fetch|Loading/i.test(message)) {
+    return new Error(
+      "Could not load the PDF reader. Refresh the page and try again. If this keeps failing, re-export as CSV from internet banking.",
+    );
+  }
+
+  if (priorMessage && priorMessage !== message) {
+    return new Error(`${message} (${priorMessage})`);
+  }
+
+  return error instanceof Error ? error : new Error(message);
 }
 
 /** Group PDF text items by Y position to reconstruct table rows. */

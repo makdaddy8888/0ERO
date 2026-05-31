@@ -6,7 +6,8 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "next dev -H 127.0.0.1",
-    "dev:clean": "lsof -ti :3000 -ti :3001 -ti :3002 -ti :3003 -ti :3004 2>/dev/null | xargs kill -9 2>/dev/null; rm -rf .next && next dev -H 127.0.0.1 -p 3000",
+    "dev:clean": "for p in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010; do lsof -ti :$p 2>/dev/null | xargs kill -9 2>/dev/null; done; rm -rf .next node_modules/.cache; next dev -H 127.0.0.1 -p 3000",
+    "dev:stable": "npm run build && npm run start",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "lint": "next lint",

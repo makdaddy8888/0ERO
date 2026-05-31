@@ -29,6 +29,18 @@ describe("classifyDocument", () => {
     expect(result.confidence).toBe("high");
   });
 
+  it("classifies NAB credit card from filename alone", () => {
+    const result = classifyDocument({
+      fileName: "8255-20251202-statement.pdf",
+      textSample: "",
+      isPdf: true,
+    });
+    expect(result.institutionId).toBe("nab");
+    expect(result.accountCategory).toBe("credit_card");
+    expect(result.accountLabel).toBe("NAB Credit card ••••8255");
+    expect(result.confidence).toBe("high");
+  });
+
   it("classifies Amex from filename", () => {
     const result = classifyDocument({
       fileName: "amex-activity.csv",
@@ -80,6 +92,39 @@ describe("analyseAccountGaps", () => {
     expect(gaps.some((g) => g.id === "missing-cba-cc")).toBe(true);
     expect(gaps.some((g) => g.id === "missing-selfwealth")).toBe(true);
     expect(gaps.some((g) => g.id === "broker-missing")).toBe(false);
+  });
+
+  it("does not flag missing credit card when classified files are present", () => {
+    const nabProfile: UserDiscoveryProfile = {
+      confirmedInstitutionIds: ["nab", "nab-cc"],
+      financialYear: "2025-26",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const files: ProcessedFile[] = [
+      {
+        id: "1",
+        fileName: "8255-20251202-statement.pdf",
+        relativePath: "8255-20251202-statement.pdf",
+        fileKind: "pdf",
+        classification: {
+          institutionId: "nab",
+          institutionLabel: "NAB",
+          accountCategory: "credit_card",
+          accountLabel: "NAB Credit card ••••8255",
+          confidence: "high",
+          signals: [],
+        },
+        parseStatus: "failed",
+        parseFormat: null,
+        transactionCount: 0,
+        transactions: [],
+        dateRange: null,
+        error: "No transaction rows",
+      },
+    ];
+    const gaps = analyseAccountGaps([], files, nabProfile);
+    expect(gaps.some((g) => g.id === "missing-nab-cc")).toBe(false);
+    expect(gaps.some((g) => g.id === "failed-files")).toBe(true);
   });
 
   it("flags failed files", () => {
