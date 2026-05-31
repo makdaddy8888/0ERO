@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 1 of 4 (Discovery persistence & gate)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-05-31 — GSD installed, codebase mapped, planning artifacts written
+Plan: 0 of 3 in current phase
+Status: Ready to execute
+Last activity: 2026-05-31 — Phase 1 planned (3 plans in `.planning/phases/01-discovery-persistence/`)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,5 +56,5 @@ From codebase map — see `.planning/codebase/CONCERNS.md`:
 ## Session Continuity
 
 Last session: 2026-05-31
-Stopped at: Map-codebase complete; ready for `/gsd/plan-phase 1` or `/gsd/new-project`
+Stopped at: Phase 1 planned; ready for `/gsd/execute-phase 1`
 Resume file: None

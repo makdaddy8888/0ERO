@@ -23,12 +23,12 @@ None (GSD domain skills not installed)
 **Goal**: Discovery profile and confirmed institutions live in SQLite; `/import` requires completed setup.
 **Depends on**: Nothing (first GSD phase)
 **Research**: Unlikely (schema exists in `src/lib/db/schema.ts`)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Wire `getDb()` + household_profile / user_institutions tables
-- [ ] 01-02: One-time localStorage → SQLite migration on first load
-- [ ] 01-03: Implement `isDiscoveryComplete()` gate on `/import` route
+- [ ] 01-01: Schema + migration + discovery repository (`discovery-repository.ts`)
+- [ ] 01-02: Server Actions + localStorage migration + Setup form wired to SQLite
+- [ ] 01-03: Import gate + pass server profile to folder import form
 
 ### Phase 2: Question wizard
 **Goal**: BMAD-inspired multi-phase intake with JSON question banks for FY 2025-26.
@@ -68,7 +68,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Discovery persistence & gate | 0/TBD | Not started | - |
+| 1. Discovery persistence & gate | 0/3 | Planned | - |
 | 2. Question wizard | 0/TBD | Not started | - |
 | 3. Import → ledger | 0/TBD | Not started | - |
 | 4. Hardening & tests | 0/TBD | Not started | - |
